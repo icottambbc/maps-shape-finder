@@ -6,7 +6,7 @@ import Rectangle from './Rectangle';
 // get defaults from the map
 // custom shape?
 
-class Controls extends Component {
+class Controls extends Component{
 
   constructor() {
     super();
@@ -22,7 +22,7 @@ class Controls extends Component {
 
   addCircle() {
     const defaultRadius = 500;
-    const defaultCentre = {lat: 51.425, lng: -0.319};
+    const defaultCentre = this.props.map.getCenter();
     this.circle = new Circle(this.props.map, defaultRadius, defaultCentre);
   }
 
@@ -31,12 +31,15 @@ class Controls extends Component {
   }
 
   addRectangle() {
+    const lat = this.props.map.getCenter().lat();
+    const lng = this.props.map.getCenter().lng();
     const defaultBounds = {
-      north: 51.435,
-      south: 51.415,
-      east: -0.305,
-      west: -0.32948501586918155
+      north: lat + 0.01,
+      south: lat - 0.01,
+      east: lng + 0.01,
+      west: lng - 0.01,
     };
+    console.log(this.props.map.getCenter());
     this.rectangle = new Rectangle(this.props.map, defaultBounds);
   }
 
