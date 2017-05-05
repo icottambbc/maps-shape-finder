@@ -1,0 +1,32 @@
+{
+  "name": "maps",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "build:js": "webpack --env=production",
+    "watch:js": "webpack --progress --watch",
+    "watch:css": "onchange 'assets/styles/**/*.scss' -i -- npm run build:css",
+    "build:css": "node-sass assets/styles/index.scss assets/dist/app.css --include-path=node_modules"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.2"
+  },
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "babel-core": "^6.24.1",
+    "babel-loader": "^7.0.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-react": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
+    "node-sass": "^4.5.2",
+    "onchange": "^3.2.1",
+    "react": "^15.5.4",
+    "react-dom": "^15.5.4",
+    "webpack": "^2.5.0"
+  }
+}
