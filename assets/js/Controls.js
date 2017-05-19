@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import Circle from './Circle';
 import Rectangle from './Rectangle';
+import InfoWindow from './component/InfoWindow';
 
 
 // get defaults from the map
@@ -22,6 +24,7 @@ class Controls extends Component{
     this.isPlaceInPolygon = this.isPlaceInPolygon.bind(this);
     this.removePolygon = this.removePolygon.bind(this);
     this.clearMarkers = this.clearMarkers.bind(this);
+    this.getPolygonBounds = this.getPolygonBounds.bind(this);
   }
 
   componentDidMount() {
@@ -31,11 +34,11 @@ class Controls extends Component{
 
     //listen for a polygon to be drawn
     var drawingManager = new google.maps.drawing.DrawingManager({
-      drawingMode: google.maps.drawing.OverlayType.MARKER,
+      drawingMode: google.maps.drawing.OverlayType.POLYGON,
       drawingControl: true,
       drawingControlOptions: {
         position: google.maps.ControlPosition.TOP_CENTER,
-        drawingModes: ['marker', 'polygon', 'polyline']
+        drawingModes: ['polygon']
       },
       markerOptions: {icon: 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png'},
       circleOptions: {
@@ -91,12 +94,17 @@ class Controls extends Component{
       var service = new google.maps.places.PlacesService(this.props.map);
 
       // replace location and radius with bounds - all from the polygon
-
       service.textSearch({
-        location: this.home,
-        radius: '500',
+        bounds: this.getPolygonBounds(this.polygon),
         query: e.target.value
       }, this.filterAndRenderPlaces);
+
+      // service.textSearch({
+      //   location: this.home,
+      //   radius: '500',
+      //   query: e.target.value
+      // }, this.filterAndRenderPlaces);
+
     } else {
       alert('you must draw a polygon');
     }
@@ -120,7 +128,23 @@ class Controls extends Component{
         alert('No results found in your specified area');
       }
     }
-  } 
+  }
+
+  getPolygonBounds(polygon) {
+
+    //initialize the bounds
+    var bounds = new google.maps.LatLngBounds();
+    //iterate over the paths
+    this.polygon.getPaths().getArray().forEach(function(path){
+       //iterate over the points in the path
+       path.getArray().forEach(function(latLng){
+         //extend the bounds
+         bounds.extend(latLng);
+       });
+    });
+
+    return bounds;
+  }
 
   isPlaceInPolygon(place) {
     var placeLat = place.geometry.location.lat()
@@ -140,7 +164,11 @@ class Controls extends Component{
     var infowindow = this.infowindow;
 
     google.maps.event.addListener(marker, 'click', function() {
-      infowindow.setContent(place.name);
+      var div = document.createElement('div');
+      ReactDOM.render( <InfoWindow place={place}/>, div );
+      infowindow.setContent( div );
+
+      // infowindow.setContent(place.name);
       infowindow.open(map, this);
     });
     this.markers.push(marker);
