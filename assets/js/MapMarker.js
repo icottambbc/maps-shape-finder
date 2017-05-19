@@ -5,7 +5,7 @@ export default class MapMarker {
     this.map = map;
     this.markers = [];
     this.infowindow = new google.maps.InfoWindow();
-    this.service = new google.maps.places.PlacesService(map);
+    // this.service = new google.maps.places.PlacesService(map);
 
     // functions
     this.handlePlacesSearch = this.handlePlacesSearch.bind(this);

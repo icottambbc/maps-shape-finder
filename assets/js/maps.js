@@ -18,7 +18,10 @@ function initMap() {
     <Controls map={map}/>,
     document.getElementById('controls')
   );
+
 }
 
 google.maps.event.addDomListener(window, 'load', initMap);
+
+// find places and then filter then to be within the bounds
 

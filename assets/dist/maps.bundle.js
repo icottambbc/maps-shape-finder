@@ -4642,7 +4642,7 @@ var MapMarker = function () {
     this.map = map;
     this.markers = [];
     this.infowindow = new google.maps.InfoWindow();
-    this.service = new google.maps.places.PlacesService(map);
+    // this.service = new google.maps.places.PlacesService(map);
 
     // functions
     this.handlePlacesSearch = this.handlePlacesSearch.bind(this);
@@ -9637,14 +9637,57 @@ var Controls = function (_Component) {
 
     var _this = _possibleConstructorReturn(this, (Controls.__proto__ || Object.getPrototypeOf(Controls)).call(this));
 
+    _this.markers = [];
+
     _this.addCircle = _this.addCircle.bind(_this);
     _this.removeCircle = _this.removeCircle.bind(_this);
     _this.addRectangle = _this.addRectangle.bind(_this);
     _this.removeRectangle = _this.removeRectangle.bind(_this);
+    _this.filterAndRenderPlaces = _this.filterAndRenderPlaces.bind(_this);
+    _this.findPlaces = _this.findPlaces.bind(_this);
+    _this.createMarker = _this.createMarker.bind(_this);
+    _this.isPlaceInPolygon = _this.isPlaceInPolygon.bind(_this);
+    _this.removePolygon = _this.removePolygon.bind(_this);
+    _this.clearMarkers = _this.clearMarkers.bind(_this);
     return _this;
   }
 
   _createClass(Controls, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.home = new google.maps.LatLng(this.props.map.getCenter().lat(), this.props.map.getCenter().lng());
+      this.infowindow = new google.maps.InfoWindow();
+      this.polygonCoords = null;
+
+      //listen for a polygon to be drawn
+      var drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: google.maps.drawing.OverlayType.MARKER,
+        drawingControl: true,
+        drawingControlOptions: {
+          position: google.maps.ControlPosition.TOP_CENTER,
+          drawingModes: ['marker', 'polygon', 'polyline']
+        },
+        markerOptions: { icon: 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png' },
+        circleOptions: {
+          fillColor: '#ffff00',
+          fillOpacity: 1,
+          strokeWeight: 5,
+          clickable: false,
+          editable: true,
+          zIndex: 1
+        }
+      });
+      drawingManager.setMap(this.props.map);
+
+      google.maps.event.addListener(drawingManager, 'polygoncomplete', function (polygon) {
+        this.polygon = polygon;
+        // this.polygonCoords = polygon.overlay.getPath().getArray();
+        // for (var i = this.polygonCoords.length - 1; i >= 0; i--) {
+        //   console.log( 'lat: ' + this.polygonCoords[i].lat() + 'lng: ' + this.polygonCoords[i].lng() );
+        // }
+      }.bind(this));
+    }
+  }, {
     key: 'removeCircle',
     value: function removeCircle() {
       this.circle.removeCircle();
@@ -9674,6 +9717,83 @@ var Controls = function (_Component) {
       };
       console.log(this.props.map.getCenter());
       this.rectangle = new _Rectangle2.default(this.props.map, defaultBounds);
+    }
+  }, {
+    key: 'findPlaces',
+    value: function findPlaces(e) {
+      if (this.polygon) {
+        var service = new google.maps.places.PlacesService(this.props.map);
+
+        // replace location and radius with bounds - all from the polygon
+
+        service.textSearch({
+          location: this.home,
+          radius: '500',
+          query: e.target.value
+        }, this.filterAndRenderPlaces);
+      } else {
+        alert('you must draw a polygon');
+      }
+    }
+  }, {
+    key: 'filterAndRenderPlaces',
+    value: function filterAndRenderPlaces(results, status) {
+      if (status == google.maps.places.PlacesServiceStatus.OK) {
+        var resultsCount = 0;
+
+        for (var i = 0; i < results.length; i++) {
+          var place = results[i];
+          if (this.isPlaceInPolygon(place)) {
+            this.createMarker(results[i]);
+            resultsCount++;
+          }
+        }
+
+        if (resultsCount) {
+          alert('Found ' + resultsCount + ' results.');
+        } else {
+          alert('No results found in your specified area');
+        }
+      }
+    }
+  }, {
+    key: 'isPlaceInPolygon',
+    value: function isPlaceInPolygon(place) {
+      var placeLat = place.geometry.location.lat();
+      var placeLng = place.geometry.location.lng();
+      if (google.maps.geometry.poly.containsLocation(new google.maps.LatLng(placeLat, placeLng), this.polygon)) {
+        return true;
+      }
+    }
+  }, {
+    key: 'createMarker',
+    value: function createMarker(place) {
+      var placeLoc = place.geometry.location;
+      var marker = new google.maps.Marker({
+        map: this.props.map,
+        position: place.geometry.location
+      });
+      var map = this.props.map;
+      var infowindow = this.infowindow;
+
+      google.maps.event.addListener(marker, 'click', function () {
+        infowindow.setContent(place.name);
+        infowindow.open(map, this);
+      });
+      this.markers.push(marker);
+    }
+  }, {
+    key: 'clearMarkers',
+    value: function clearMarkers() {
+      for (var i = 0; i < this.markers.length; i++) {
+        this.markers[i].setMap(null);
+      }
+    }
+  }, {
+    key: 'removePolygon',
+    value: function removePolygon() {
+      this.polygon.setMap(null);
+      this.clearMarkers();
     }
   }, {
     key: 'render',
@@ -9709,6 +9829,14 @@ var Controls = function (_Component) {
           'a',
           { onClick: this.removeRectangle },
           'Remove Rectangle'
+        ),
+        _react2.default.createElement('br', null),
+        _react2.default.createElement('input', { onBlur: this.findPlaces, style: { width: '200px' }, placeholder: 'Find places within your polygon', type: 'text' }),
+        _react2.default.createElement('br', null),
+        _react2.default.createElement(
+          'a',
+          { onClick: this.removePolygon },
+          'Remove Polygon'
         ),
         _react2.default.createElement('br', null)
       );
@@ -9958,6 +10086,8 @@ function initMap() {
 }
 
 google.maps.event.addDomListener(window, 'load', initMap);
+
+// find places and then filter then to be within the bounds
 
 /***/ }),
 /* 87 */
